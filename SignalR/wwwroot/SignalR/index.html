@@ -7,9 +7,19 @@
 <script>
     $(document).ready(()=>{
     const connection=new signalR.HubConnectionBuilder()
-    .withUrl("https://localhost:5001/MyHub").build();
+    .withUrl("https://localhost:5001/MyHub")
+    .withAutomaticReconnect([1000,1000,1100,2000]) //bağlantı var lakin koptuğu durumlarda kullanılır
+    .build();
 
-    connection.start();
+    async function start(){
+        try{
+            await connection.start();
+        }catch(error){
+            setTimeout(()=>start(),2000);
+        }
+    }
+    start();
+
     
     $("#btnGonder").click(()=>{
         let message=$("#txtMessage").val();
@@ -20,9 +30,12 @@
          $("div").append(message+"<br>");
     });
 
+    //bağlantının hiç kurulmadığı durumlarda kullanılan fonksiyon
+    
+    
     });
 </script>
-
+ 
 </head>
 <body>
     <input type="text" id="txtMessage">
