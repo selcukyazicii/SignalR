@@ -1,47 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="../SignalR/signalr.min.js"></script>
-    <script src="../SignalR/jquery.min.js"></script>
+    <script src="signalr.min.js"></script>
+    <script src="jquery.min.js"></script>
 
-<script>
-    $(document).ready(()=>{
-    const connection=new signalR.HubConnectionBuilder()
-    .withUrl("https://localhost:5001/MyHub")
-    .withAutomaticReconnect([1000,1000,1100,2000]) //bağlantı var lakin koptuğu durumlarda kullanılır
-    .build();
+    <script>
+        $(document).ready(() => {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("https://localhost:5001/MyHub")
+                .withAutomaticReconnect([1000, 1000, 2000]) //bağlantı var lakin koptuğu durumlarda kullanılır
+                .build();
 
-    async function start(){
-        try{
-            await connection.start();
-        }catch(error){
-            setTimeout(()=>start(),2000);
-        }
-    }
-    start();
+            async function start() {
+                try {
+                    await connection.start();
+                } catch (error) {
+                    setTimeout(() => start(), 2000);
+                }
+            }
+            start();
 
-    
-    $("#btnGonder").click(()=>{
-        let message=$("#txtMessage").val();
-        connection.invoke("SendMessageAsync",message).catch(error=>console.log(`Hata oluştu. ${error}`));
-    });
+            const durum = $("#durum");
+            connection.onreconnecting(error => {
+                durum.css("background-color", "blue");
+                durum.css("color", "white");
+                durum.html("Bağlanti yeniden kuruluyor lütfen bekleyiniz...");
+                durum.fadeIn(2000, () => {
+                    setTimeout(() => {
+                        durum.fadeOut(2000);
+                    }, 2000)
+                });
+            });
 
-    connection.on("receiveMessage",message=>{
-         $("div").append(message+"<br>");
-    });
 
-    //bağlantının hiç kurulmadığı durumlarda kullanılan fonksiyon
-    
-    
-    });
-</script>
- 
+            connection.onreconnected(connectionId => {
+                durum.css("background-color", "green");
+                durum.css("color", "white");
+                durum.html("Bağlanti kuruldu");
+                durum.fadeIn(2000, () => {
+                    setTimeout(() => {
+                        durum.fadeOut(2000);
+                    }, 2000)
+                });
+            });
+
+            connection.onclose(connectionId => {
+                durum.css("background-color", "red");
+                durum.css("color", "white");
+                durum.html("Bağlantı kurulamadı");
+                durum.fadeIn(2000, () => {
+                    setTimeout(() => {
+                        durum.fadeOut(2000);
+                    }, 2000)
+                });
+            });
+
+
+
+
+            $("#btnGonder").click(() => {
+                let message = $("#txtMessage").val();
+                connection.invoke("SendMessageAsync", message).catch(error => console.log(`Hata oluştu. ${error}`));
+            });
+
+            connection.on("receiveMessage", message => {
+                $("#mesajlar").append(message + "<br>");
+            });
+
+            //bağlantının hiç kurulmadığı durumlarda kullanılan fonksiyon
+
+
+        });
+    </script>
+
 </head>
 <body>
-    <input type="text" id="txtMessage">
-    <button id="btnGonder">Gonder</button>
+    <div id="durum" style="display:none"></div>
 
-<div></div>
+
+    <input type="text" id="txtMessage">
+    <button id="btnGonder">Gönder</button>
+
+    <div id="mesajlar"></div>
 
 </body>
 </html>
