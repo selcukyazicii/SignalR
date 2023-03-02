@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="signalr.min.js"></script>
-    <script src="jquery.min.js"></script>
+    <script src="../SignalR/jquery.min.js"></script>
+    <script src="../SignalR/signalr.min.js"></script>
 
     <script>
         $(document).ready(() => {
@@ -10,7 +10,6 @@
                 .withUrl("https://localhost:5001/MyHub")
                 .withAutomaticReconnect([1000, 1000, 2000]) //bağlantı var lakin koptuğu durumlarda kullanılır
                 .build();
-
 
             async function start() {
                 try {
@@ -21,16 +20,21 @@
             }
             start();
 
-            const durum = $("#durum");
-            connection.onreconnecting(error => {
-                durum.css("background-color", "blue");
-                durum.css("color", "white");
-                durum.html("Bağlanti yeniden kuruluyor lütfen bekleyiniz...");
+            function animation() {
                 durum.fadeIn(2000, () => {
                     setTimeout(() => {
                         durum.fadeOut(2000);
                     }, 2000)
                 });
+            }
+
+
+            const durum = $("#durum");
+            connection.onreconnecting(error => {
+                durum.css("background-color", "blue");
+                durum.css("color", "white");
+                durum.html("Bağlanti yeniden kuruluyor lütfen bekleyiniz...");
+                animation();
             });
 
 
@@ -38,25 +42,36 @@
                 durum.css("background-color", "green");
                 durum.css("color", "white");
                 durum.html("Bağlanti kuruldu");
-                durum.fadeIn(2000, () => {
-                    setTimeout(() => {
-                        durum.fadeOut(2000);
-                    }, 2000)
-                });
+                animation();
             });
 
             connection.onclose(connectionId => {
                 durum.css("background-color", "red");
                 durum.css("color", "white");
                 durum.html("Bağlantı kurulamadı");
-                durum.fadeIn(2000, () => {
-                    setTimeout(() => {
-                        durum.fadeOut(2000);
-                    }, 2000)
-                });
+                animation();
+            });
+
+            connection.on("userJoined", connectionId => {
+                durum.html(`${connectionId} odaya bağlandi`);
+                durum.css("background-color", "green");
+                animation();
+            });
+
+            connection.on("userLeaved", connectionId => {
+                durum.html(`${connectionId} odadan ayrildi.`);
+                durum.css("background-color", "red");
+                animation();
             });
 
 
+            connection.on("clients", clientsData => {
+                let text = "";
+                $.each(clientsData, (index, item) => {
+                    text += `<li>${item}</li>`;
+                });
+                $("#clients").html(text);
+            });
 
 
             $("#btnGonder").click(() => {
@@ -83,6 +98,11 @@
     <button id="btnGonder">Gönder</button>
 
     <div id="mesajlar"></div>
+
+    <div>
+        <ul id="clients">
+        </ul>
+    </div>
 
 </body>
 </html>
